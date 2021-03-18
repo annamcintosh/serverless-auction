@@ -13,5 +13,6 @@ export async function uploadPictureToS3(key, body) {
     })
     .promise();
 
+  console.log("result", JSON.stringify(result, null, 2));
   return result.Location;
 }

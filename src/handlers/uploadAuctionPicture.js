@@ -1,12 +1,11 @@
-
-import middy from '@middy/core';
-import httpErrorHandler from '@middy/http-error-handler';
-// import validator from '@middy/validator';
-import createError from 'http-errors';
-import { getAuctionById } from './getAuction';
-import { uploadPictureToS3 } from '../lib/uploadPictureToS3';
-import { setAuctionPictureUrl } from '../lib/setAuctionPictureUrl';
-// import uploadAuctionPictureSchmea from '../lib/schemas/uploadAuctionPictureSchema';
+import middy from "@middy/core";
+import httpErrorHandler from "@middy/http-error-handler";
+import validator from "@middy/validator";
+import createError from "http-errors";
+import { getAuctionById } from "./getAuction";
+import { uploadPictureToS3 } from "../lib/uploadPictureToS3";
+import { setAuctionPictureUrl } from "../lib/setAuctionPictureUrl";
+import uploadAuctionPictureSchema from "../lib/schemas/uploadAuctionPictureSchema";
 
 export async function uploadAuctionPicture(event) {
   const { id } = event.pathParameters;
@@ -15,16 +14,18 @@ export async function uploadAuctionPicture(event) {
 
   // Validate auction ownership
   if (auction.seller !== email) {
-    throw new createError.Forbidden(`Only the seller of an auction can add a picture.`);
+    throw new createError.Forbidden(
+      `Only the seller of an auction can add a picture.`
+    );
   }
 
-  const base64 = event.body.replace(/^data:image\/\w+;base64,/, '');
-  const buffer = Buffer.from(base64, 'base64');
+  const base64 = event.body.replace(/^data:image\/\w+;base64,/, "");
+  const buffer = Buffer.from(base64, "base64");
 
   let updatedAuction;
 
   try {
-    const pictureUrl = await uploadPictureToS3(auction.id + '.jpg', buffer);
+    const pictureUrl = await uploadPictureToS3(auction.id + ".jpg", buffer);
     updatedAuction = await setAuctionPictureUrl(auction.id, pictureUrl);
   } catch (error) {
     console.error(error);
@@ -39,3 +40,4 @@ export async function uploadAuctionPicture(event) {
 
 export const handler = middy(uploadAuctionPicture)
   .use(httpErrorHandler())
+  .use(validator({ inputSchema: uploadAuctionPictureSchema }));
